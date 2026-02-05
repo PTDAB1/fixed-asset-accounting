@@ -1,0 +1,50 @@
+```python
+from sqlalchemy import Column, Integer, String, Float, Date, Enum, ForeignKey
+from sqlalchemy.orm import relationship
+from enum import Enum as PyEnum
+from .database import Base
+
+class AssetStatus(str, PyEnum):
+    IN_STOCK = "На складе"
+    IN_USE = "В эксплуатации"
+    UNDER_REPAIR = "В ремонте"
+    WRITTEN_OFF = "Списано"
+
+class OperationType(str, PyEnum):
+    RECEIPT = "Поступление"
+    TRANSFER = "Перемещение"
+    REPAIR = "Ремонт"
+    WRITE_OFF = "Списание"
+
+class Asset(Base):
+    __tablename__ = "assets"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    inventory_number = Column(String, unique=True, nullable=False)
+    name = Column(String, nullable=False)
+    model = Column(String)
+    serial_number = Column(String)
+    purchase_date = Column(Date)
+    initial_cost = Column(Float)
+    current_cost = Column(Float)
+    status = Column(Enum(AssetStatus), default=AssetStatus.IN_STOCK)
+    useful_life = Column(Integer)  # месяцев
+    location_id = Column(Integer, ForeignKey("locations.id"))
+    responsible_id = Column(Integer, ForeignKey("employees.id"))
+    
+    location = relationship("Location")
+    responsible = relationship("Employee")
+    operations = relationship("Operation", back_populates="asset")
+
+class Operation(Base):
+    __tablename__ = "operations"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    asset_id = Column(Integer, ForeignKey("assets.id"))
+    operation_type = Column(Enum(OperationType))
+    operation_date = Column(Date)
+    document_number = Column(String)
+    amount = Column(Float)
+    notes = Column(String)
+    
+    asset = relationship("Asset", back_populates="operations")
